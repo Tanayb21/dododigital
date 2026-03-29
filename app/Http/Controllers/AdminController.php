@@ -9,6 +9,7 @@ use App\Models\Media;
 use App\Services\BookingService;
 use App\Services\VendorService;
 use App\Services\MediaService;
+use App\Services\InvoiceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -17,15 +18,18 @@ class AdminController extends Controller
     protected $vendorService;
     protected $mediaService;
     protected $bookingService;
+    protected $invoiceService;
 
     public function __construct(
         VendorService $vendorService,
         MediaService $mediaService,
-        BookingService $bookingService
+        BookingService $bookingService,
+        InvoiceService $invoiceService
     ) {
         $this->vendorService  = $vendorService;
         $this->mediaService   = $mediaService;
         $this->bookingService = $bookingService;
+        $this->invoiceService = $invoiceService;
     }
 
     /**
@@ -136,6 +140,39 @@ class AdminController extends Controller
         return response()->json([
             'message' => 'Booking status updated.',
             'booking' => $booking,
+        ]);
+    }
+
+    /**
+     * GET /admin/bookings/{id}/invoice
+     * Download invoice for any booking (admin).
+     */
+    public function downloadInvoice($id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        // Auto-generate if not already generated
+        if (!$booking->invoice_path) {
+            $this->invoiceService->generate($booking);
+            $booking->refresh();
+        }
+
+        return $this->invoiceService->download($booking);
+    }
+
+    /**
+     * POST /admin/bookings/{id}/generate-invoice
+     * Force (re)generate invoice for a booking.
+     */
+    public function generateInvoice($id)
+    {
+        $booking = Booking::findOrFail($id);
+        $path = $this->invoiceService->generate($booking);
+
+        return response()->json([
+            'message'        => 'Invoice generated successfully.',
+            'invoice_number' => $booking->fresh()->invoice_number,
+            'invoice_path'   => $path,
         ]);
     }
 }

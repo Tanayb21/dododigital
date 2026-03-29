@@ -80,6 +80,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     // Booking management
     Route::get('/bookings',                        [AdminController::class, 'listBookings']);
     Route::patch('/bookings/{id}/status',          [AdminController::class, 'updateBookingStatus']);
+    Route::get('/bookings/{id}/invoice',           [AdminController::class, 'downloadInvoice']);
+    Route::post('/bookings/{id}/generate-invoice', [AdminController::class, 'generateInvoice']);
 
     // ─── Settings Management ───────────────────────────────────────────────
     Route::get('/settings',           [SettingController::class, 'index']);
